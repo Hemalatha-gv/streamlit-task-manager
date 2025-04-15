@@ -24,7 +24,7 @@ class Task(Base):
     file_path = Column(String)
     status = Column(String, default='Not Done')
     feedback = Column(Text)
-    submitted_file_path = Column(String)
+    submitted_file_path = Column(String, nullable=True)
 
     epm_id = Column(Integer, ForeignKey('users.id'))
     reviewer_id = Column(Integer, ForeignKey('users.id'))

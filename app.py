@@ -1,10 +1,10 @@
 import streamlit as st
 import uuid
 import pandas as pd
+import os
 from database import init_db, add_user, get_user_by_username, SessionLocal
 from models import User, Task
 from sqlalchemy.orm import joinedload
-
 
 # Initialize DB on app start
 init_db()
@@ -149,6 +149,9 @@ def volunteer_dashboard():
         if task.status == 'In Progress':
             uploaded = st.file_uploader(f"Submit work for Task {task.id}", type=["pdf", "txt", "csv", "docx"])
             if uploaded:
+                os.makedirs("submitted_files", exist_ok=True)
+                with open(os.path.join("submitted_files", uploaded.name), "wb") as f:
+                    f.write(uploaded.getbuffer())
                 task.submitted_file_path = uploaded.name
                 db.commit()
                 st.success(f"Work submitted for Task {task.id}")
@@ -171,7 +174,19 @@ def reviewer_dashboard():
         st.markdown(f"**Status:** {task.status}")
 
         if task.submitted_file_path:
-            st.markdown(f"Submitted File: {task.submitted_file_path}")
+            st.markdown(f"**Submitted File:** {task.submitted_file_path}")
+            file_path = os.path.join("submitted_files", task.submitted_file_path)
+            try:
+                with open(file_path, "rb") as file:
+                    st.download_button(
+                        label="📥 Download Submitted File",
+                        data=file,
+                        file_name=task.submitted_file_path,
+                        mime="application/octet-stream"
+                    )
+            except FileNotFoundError:
+                st.error("Submitted file not found. Please check the path.")
+
             feedback_key = f"feedback_{task.id}"
             st.session_state[feedback_key] = st.text_area(
                 f"Provide Feedback for Task {task.id}",
